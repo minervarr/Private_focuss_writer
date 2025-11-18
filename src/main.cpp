@@ -12,6 +12,17 @@
 #include <cstdlib>
 #include <chrono>
 
+#ifdef _WIN32
+#include <windows.h>
+void showWindowsError(const char* message) {
+    MessageBoxA(nullptr, message, "Phantom Writer - Error", MB_OK | MB_ICONERROR);
+}
+#else
+void showWindowsError(const char* message) {
+    (void)message; // Unused on non-Windows
+}
+#endif
+
 int main() {
     // Initialize logger
     phantom::Logger::init("phantom_writer.log");
@@ -43,6 +54,7 @@ int main() {
 
     if (!platform.window) {
         LOG_FATAL(phantom::LogCategory::INIT, "Failed to create platform window");
+        showWindowsError("Failed to create platform window.\nCheck phantom_writer.log for details.");
         phantom::Logger::shutdown();
         return EXIT_FAILURE;
     }
@@ -60,6 +72,7 @@ int main() {
 
     if (!platform.window->create(windowConfig)) {
         LOG_FATAL(phantom::LogCategory::INIT, "Failed to create window");
+        showWindowsError("Failed to create window.\nCheck phantom_writer.log for details.");
         platform.cleanup();
         phantom::Logger::shutdown();
         return EXIT_FAILURE;
@@ -71,6 +84,7 @@ int main() {
 
     if (!renderer.initialize(platform.window)) {
         LOG_FATAL(phantom::LogCategory::INIT, "Failed to initialize Vulkan renderer");
+        showWindowsError("Failed to initialize Vulkan renderer.\n\nMake sure you have:\n- Vulkan SDK installed\n- Compatible GPU drivers\n\nCheck phantom_writer.log for details.");
         platform.cleanup();
         phantom::Logger::shutdown();
         return EXIT_FAILURE;
@@ -82,6 +96,7 @@ int main() {
 
     if (!fontLoader.loadFromFile("assets/fonts/default_mono.ttf", 48.0f)) {
         LOG_FATAL(phantom::LogCategory::INIT, "Failed to load font");
+        showWindowsError("Failed to load font: assets/fonts/default_mono.ttf\n\nMake sure:\n- The 'assets' folder is in the same directory as the executable\n- default_mono.ttf exists in assets/fonts/\n\nCheck phantom_writer.log for details.");
         renderer.cleanup();
         platform.cleanup();
         phantom::Logger::shutdown();
@@ -94,6 +109,7 @@ int main() {
 
     if (!textRenderer.initialize(&renderer, renderer.getRenderPass(), fontLoader.getAtlas())) {
         LOG_FATAL(phantom::LogCategory::INIT, "Failed to initialize text renderer");
+        showWindowsError("Failed to initialize text renderer.\n\nMost common causes:\n- Shader files not found (shaders/text_vert.spv, shaders/text_frag.spv)\n- Run copy_assets_windows.bat to copy all required files\n\nCheck phantom_writer.log for details.");
         renderer.cleanup();
         platform.cleanup();
         phantom::Logger::shutdown();

@@ -5,6 +5,7 @@
 1. **Visual Studio 2019 or later** with C++ development tools
    - Install "Desktop development with C++" workload
    - Make sure CMake is included
+   - **OR MinGW-w64** (GCC for Windows)
 
 2. **Vulkan SDK**
    - Download from: https://vulkan.lunarg.com/
@@ -13,6 +14,21 @@
 
 3. **CMake 3.20+**
    - Included with Visual Studio or download from cmake.org
+
+## Quick Start (Easiest Method)
+
+1. Open terminal in project root
+2. Run these commands:
+```cmd
+mkdir build
+cd build
+cmake .. -G "MinGW Makefiles"
+cmake --build . --config Debug
+cd ..
+copy_assets_windows.bat
+cd build\bin\Debug
+phantom-writer.exe
+```
 
 ## Build Steps
 
@@ -51,13 +67,32 @@ cmake --build . --config Release
 4. Visual Studio will automatically configure
 5. Build → Build All (Ctrl+Shift+B)
 
+## IMPORTANT: Copy Assets After Building
+
+After building, you MUST copy the assets and shaders to the executable directory:
+
+```cmd
+copy_assets_windows.bat
+```
+
+This script copies:
+- `assets/fonts/` → `build/bin/Debug/assets/fonts/`
+- `shaders/*.spv` → `build/bin/Debug/shaders/`
+- (Same for Release and bin directories)
+
+**Without this step, the program will crash immediately** because it can't find the font file or shader files.
+
 ## Running
 
 The executable will be in:
 - Debug: `build/bin/Debug/phantom-writer.exe`
 - Release: `build/bin/Release/phantom-writer.exe`
 
-Make sure the `assets/` folder is in the same directory as the executable, or run from the project root.
+Run from the executable's directory:
+```cmd
+cd build\bin\Debug
+phantom-writer.exe
+```
 
 ## Font Setup
 
@@ -69,6 +104,22 @@ assets/fonts/default_mono.ttf
 If the font is missing, you can use any monospace TTF font (like Consolas, Courier New, etc.)
 
 ## Troubleshooting
+
+### Program Closes Immediately
+
+**Cause**: Font file or shader files not found.
+
+**Solution**:
+1. Run `copy_assets_windows.bat` from project root
+2. Or manually copy both:
+   - `assets/` folder to the same directory as `phantom-writer.exe`
+   - `shaders/` folder to the same directory as `phantom-writer.exe`
+3. Make sure these files exist:
+   - `assets/fonts/default_mono.ttf`
+   - `shaders/text_vert.spv`
+   - `shaders/text_frag.spv`
+
+The program will show a MessageBox with error details if something fails.
 
 ### Vulkan SDK Not Found
 ```
