@@ -28,6 +28,10 @@ public:
     size_t getLine(const TextBuffer& buffer) const;
     size_t getColumn(const TextBuffer& buffer) const;
 
+    // Preferred column (for persistence)
+    size_t getPreferredColumn() const { return preferredColumn_; }
+    void setPreferredColumn(size_t column) { preferredColumn_ = column; }
+
 private:
     size_t position_;
     size_t preferredColumn_; // For up/down movement

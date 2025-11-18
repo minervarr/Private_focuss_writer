@@ -4,14 +4,19 @@
 #include "buffer.h"
 #include "cursor.h"
 #include "rendering/core/opacity_manager.h"
+#include <memory>
+#include <string>
 
 namespace phantom {
 
-// Simple editor state that holds buffer, cursor, and opacity manager
+class SwapFile;
+class Autosave;
+
+// Simple editor state that holds buffer, cursor, opacity manager, and persistence
 class EditorState {
 public:
-    EditorState() = default;
-    ~EditorState() = default;
+    EditorState(const std::string& filePath = "");
+    ~EditorState();
 
     TextBuffer& getBuffer() { return buffer_; }
     const TextBuffer& getBuffer() const { return buffer_; }
@@ -22,11 +27,21 @@ public:
     OpacityManager& getOpacityManager() { return opacityManager_; }
     const OpacityManager& getOpacityManager() const { return opacityManager_; }
 
+    SwapFile* getSwapFile() { return swapFile_.get(); }
+    Autosave* getAutosave() { return autosave_.get(); }
+
+    // Persistence
+    void startAutosave();
+    void stopAutosave();
+    void saveNow();
+    bool loadFromSwapFile();
+
     // Convenience methods
     void insertChar(char ch) {
         buffer_.insert(cursor_.getPosition(), ch);
         cursor_.setPosition(cursor_.getPosition() + 1);
         opacityManager_.onActivity(); // Notify activity
+        markDirty();
     }
 
     void deleteChar() {
@@ -35,6 +50,7 @@ public:
             buffer_.erase(pos, 1);
             cursor_.setPosition(pos);
             opacityManager_.onActivity(); // Notify activity
+            markDirty();
         }
     }
 
@@ -44,9 +60,14 @@ public:
     }
 
 private:
+    void markDirty();
+
     TextBuffer buffer_;
     Cursor cursor_;
     OpacityManager opacityManager_;
+
+    std::unique_ptr<SwapFile> swapFile_;
+    std::unique_ptr<Autosave> autosave_;
 };
 
 } // namespace phantom

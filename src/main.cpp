@@ -4,6 +4,7 @@
 #include "rendering/vulkan/vk_text_renderer.h"
 #include "rendering/core/font_loader.h"
 #include "core/editor_state.h"
+#include "persistence/swap_file.h"
 #include "utils/logger.h"
 #include "phantom_writer/version.h"
 
@@ -101,8 +102,28 @@ int main() {
     // Update projection matrix for text rendering
     textRenderer.updateProjection(windowConfig.width, windowConfig.height);
 
-    // Create editor state (buffer + cursor)
-    phantom::EditorState editorState;
+    // Create editor state (buffer + cursor + persistence)
+    std::string filePath = ""; // TODO: Get from command line args
+    phantom::EditorState editorState(filePath);
+
+    // Check for crash recovery
+    if (editorState.getSwapFile()->exists()) {
+        if (editorState.getSwapFile()->isNewerThanOriginal()) {
+            LOG_WARN(phantom::LogCategory::PERSISTENCE, "Swap file detected - possible crash recovery");
+            LOG_INFO(phantom::LogCategory::PERSISTENCE, "Attempting to load from swap file");
+            if (editorState.loadFromSwapFile()) {
+                LOG_INFO(phantom::LogCategory::PERSISTENCE, "Successfully recovered from swap file");
+            } else {
+                LOG_ERROR(phantom::LogCategory::PERSISTENCE, "Failed to recover from swap file");
+            }
+        } else {
+            LOG_INFO(phantom::LogCategory::PERSISTENCE, "Removing old swap file");
+            editorState.getSwapFile()->remove();
+        }
+    }
+
+    // Start autosave thread
+    editorState.startAutosave();
 
     // Setup input callback to handle keyboard events
     auto* x11Window = dynamic_cast<phantom::WindowX11*>(platform.window);
@@ -116,6 +137,13 @@ int main() {
             }
             else if (event.type == phantom::InputEvent::Type::KeyDown) {
                 const auto& kbd = event.data.keyboard;
+
+                // Handle Ctrl+S (manual save)
+                if (kbd.ctrl && kbd.key == phantom::KeyCode::S) {
+                    editorState.saveNow();
+                    LOG_INFO(phantom::LogCategory::PERSISTENCE, "Manual save triggered (Ctrl+S)");
+                    return;
+                }
 
                 // Handle special keys
                 switch (kbd.key) {
@@ -232,6 +260,14 @@ int main() {
 
     // Cleanup
     LOG_INFO(phantom::LogCategory::INIT, "Cleaning up resources");
+
+    // Stop autosave and remove swap file on clean exit
+    editorState.stopAutosave();
+    if (editorState.getSwapFile()->exists()) {
+        LOG_INFO(phantom::LogCategory::PERSISTENCE, "Removing swap file on clean exit");
+        editorState.getSwapFile()->remove();
+    }
+
     textRenderer.cleanup();
     renderer.cleanup();
     platform.cleanup();

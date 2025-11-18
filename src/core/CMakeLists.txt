@@ -1,6 +1,7 @@
 add_library(phantom_core STATIC
     buffer.cpp
     cursor.cpp
+    editor_state.cpp
 )
 
 target_include_directories(phantom_core PUBLIC
@@ -10,4 +11,6 @@ target_include_directories(phantom_core PUBLIC
 
 target_link_libraries(phantom_core PUBLIC
     phantom_utils
+    phantom_rendering_core
+    phantom_persistence
 )
