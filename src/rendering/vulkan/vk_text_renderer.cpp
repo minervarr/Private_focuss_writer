@@ -1,6 +1,7 @@
 #include "vk_text_renderer.h"
 #include "vk_renderer.h"
 #include "rendering/core/font_loader.h"
+#include "rendering/core/glyph_fragmenter.h"
 #include "utils/logger.h"
 #include <fstream>
 #include <cstring>
@@ -36,6 +37,10 @@ bool VulkanTextRenderer::initialize(VulkanRenderer* renderer, VkRenderPass rende
     renderPass_ = renderPass;
     atlas_ = &atlas;
     device_ = renderer->getDevice();
+
+    // Create glyph fragmenter
+    fragmenter_ = new GlyphFragmenter();
+    LOG_DEBUG(LogCategory::RENDER, "GlyphFragmenter created");
 
     if (!createDescriptorSet()) {
         LOG_ERROR(LogCategory::RENDER, "Failed to create descriptor set");
@@ -119,6 +124,12 @@ void VulkanTextRenderer::cleanup() {
         }
     }
 
+    // Cleanup fragmenter
+    if (fragmenter_ != nullptr) {
+        delete fragmenter_;
+        fragmenter_ = nullptr;
+    }
+
     initialized_ = false;
     LOG_INFO(LogCategory::RENDER, "Vulkan text renderer cleaned up");
 }
@@ -185,7 +196,7 @@ bool VulkanTextRenderer::createPipeline() {
     bindingDescription.stride = sizeof(TextVertex);
     bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
-    VkVertexInputAttributeDescription attributeDescriptions[2];
+    VkVertexInputAttributeDescription attributeDescriptions[3];
 
     // Position
     attributeDescriptions[0].binding = 0;
@@ -199,11 +210,17 @@ bool VulkanTextRenderer::createPipeline() {
     attributeDescriptions[1].format = VK_FORMAT_R32G32_SFLOAT;
     attributeDescriptions[1].offset = offsetof(TextVertex, texCoord);
 
+    // Fragment Mode
+    attributeDescriptions[2].binding = 0;
+    attributeDescriptions[2].location = 2;
+    attributeDescriptions[2].format = VK_FORMAT_R32_UINT;
+    attributeDescriptions[2].offset = offsetof(TextVertex, fragmentMode);
+
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
     vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
     vertexInputInfo.vertexBindingDescriptionCount = 1;
     vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
-    vertexInputInfo.vertexAttributeDescriptionCount = 2;
+    vertexInputInfo.vertexAttributeDescriptionCount = 3;
     vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions;
 
     // Input assembly
@@ -354,10 +371,82 @@ void VulkanTextRenderer::updateProjection(int width, int height) {
 
 void VulkanTextRenderer::renderText(VkCommandBuffer commandBuffer, const std::string& text,
                                     float x, float y, float scale) {
-    // TODO: Implement text rendering
-    // For FASE 1B stub
-    LOG_TRACE(LogCategory::RENDER, "Rendering text: '%s' at (%.1f, %.1f) scale %.2f",
-        text.c_str(), x, y, scale);
+    if (!initialized_ || text.empty()) {
+        return;
+    }
+
+    // Build vertex data for all characters
+    std::vector<TextVertex> vertices;
+    vertices.reserve(text.length() * 6); // 6 vertices per character (2 triangles)
+
+    float cursorX = x;
+    float cursorY = y;
+    size_t charIndex = 0;
+    size_t currentLine = 0;
+    size_t currentColumn = 0;
+
+    for (char ch : text) {
+        // Handle newlines
+        if (ch == '\n') {
+            cursorX = x;
+            cursorY += atlas_->lineHeight * scale;
+            currentLine++;
+            currentColumn = 0;
+            charIndex++;
+            continue;
+        }
+
+        // Get glyph from atlas
+        if (ch < 32 || ch > 126) {
+            charIndex++;
+            currentColumn++;
+            continue; // Skip non-printable characters
+        }
+
+        const Glyph& glyph = atlas_->glyphs[ch - 32];
+
+        // Determine fragment mode using the fragmenter
+        FragmentMode mode = fragmenter_->getFragmentMode(currentLine, currentColumn);
+        uint32_t fragmentMode = static_cast<uint32_t>(mode);
+
+        // Calculate quad positions
+        float x0 = cursorX + glyph.xOffset * scale;
+        float y0 = cursorY + glyph.yOffset * scale;
+        float x1 = x0 + glyph.width * scale;
+        float y1 = y0 + glyph.height * scale;
+
+        // Calculate texture coordinates (already normalized in glyph structure)
+        float u0 = glyph.x0;
+        float v0 = glyph.y0;
+        float u1 = glyph.x1;
+        float v1 = glyph.y1;
+
+        // Create 6 vertices for two triangles (quad)
+        // Triangle 1: top-left, bottom-left, top-right
+        vertices.push_back({{x0, y0}, {u0, v0}, fragmentMode});
+        vertices.push_back({{x0, y1}, {u0, v1}, fragmentMode});
+        vertices.push_back({{x1, y0}, {u1, v0}, fragmentMode});
+
+        // Triangle 2: top-right, bottom-left, bottom-right
+        vertices.push_back({{x1, y0}, {u1, v0}, fragmentMode});
+        vertices.push_back({{x0, y1}, {u0, v1}, fragmentMode});
+        vertices.push_back({{x1, y1}, {u1, v1}, fragmentMode});
+
+        // Advance cursor
+        cursorX += glyph.advance * scale;
+        charIndex++;
+        currentColumn++;
+    }
+
+    if (vertices.empty()) {
+        return;
+    }
+
+    LOG_TRACE(LogCategory::RENDER, "Rendering %zu characters (%zu vertices)",
+              text.length(), vertices.size());
+
+    // TODO: Upload vertices to GPU and draw
+    // For now, this is a stub that will be implemented when we integrate with VulkanRenderer
 }
 
 } // namespace phantom

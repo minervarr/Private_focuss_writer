@@ -9,11 +9,13 @@
 namespace phantom {
 
 class VulkanRenderer;
+class GlyphFragmenter;
 struct FontAtlas;
 
 struct TextVertex {
-    float position[2];   // x, y
-    float texCoord[2];   // u, v
+    float position[2];    // x, y
+    float texCoord[2];    // u, v
+    uint32_t fragmentMode; // 0=top, 1=bottom
 };
 
 class VulkanTextRenderer {
@@ -69,6 +71,9 @@ private:
 
     // Font atlas reference
     const FontAtlas* atlas_ = nullptr;
+
+    // Glyph fragmenter
+    GlyphFragmenter* fragmenter_ = nullptr;
 
     bool initialized_ = false;
 };

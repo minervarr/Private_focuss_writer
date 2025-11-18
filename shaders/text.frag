@@ -2,6 +2,7 @@
 
 // Input from vertex shader
 layout(location = 0) in vec2 fragTexCoord;
+layout(location = 1) flat in uint fragMode;
 
 // Output color
 layout(location = 0) out vec4 outColor;
@@ -10,8 +11,19 @@ layout(location = 0) out vec4 outColor;
 layout(binding = 0) uniform sampler2D fontAtlas;
 
 void main() {
-    // Sample the alpha from the atlas (it's a grayscale texture)
-    float alpha = texture(fontAtlas, fragTexCoord).r;
+    vec2 adjustedTexCoord = fragTexCoord;
+
+    // Fragmentación: mostrar solo mitad superior o inferior
+    if (fragMode == 0) {
+        // Mitad superior: Y de 0.0 a 0.5
+        adjustedTexCoord.y *= 0.5;
+    } else {
+        // Mitad inferior: Y de 0.5 a 1.0
+        adjustedTexCoord.y = 0.5 + adjustedTexCoord.y * 0.5;
+    }
+
+    // Sample the alpha from the atlas with adjusted coordinates
+    float alpha = texture(fontAtlas, adjustedTexCoord).r;
 
     // Output white text with sampled alpha
     outColor = vec4(1.0, 1.0, 1.0, alpha);
