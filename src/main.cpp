@@ -184,8 +184,14 @@ int main() {
                         break;
 
                     case phantom::KeyCode::Backspace:
-                        editorState.deleteChar();
-                        LOG_TRACE(phantom::LogCategory::INPUT, "Backspace pressed");
+                        // Handle backspace in confirmation dialog
+                        if (editorState.getConfirmationDialog()->isActive()) {
+                            editorState.getConfirmationDialog()->processBackspace();
+                            LOG_TRACE(phantom::LogCategory::UI, "Backspace in confirmation dialog");
+                        } else {
+                            editorState.deleteChar();
+                            LOG_TRACE(phantom::LogCategory::INPUT, "Backspace pressed");
+                        }
                         break;
 
                     case phantom::KeyCode::Enter:
@@ -291,6 +297,23 @@ int main() {
         float textX = 20.0f;
         float textY = 50.0f;
         textRenderer.renderText(renderer.getCurrentCommandBuffer(), bufferText, textX, textY, 1.0f, opacity, disableFragmentation);
+
+        // Render UI overlays
+        // Confirmation dialog prompt at bottom
+        if (editorState.getConfirmationDialog()->isActive()) {
+            std::string prompt = editorState.getConfirmationDialog()->getPromptMessage();
+            float promptX = 20.0f;
+            float promptY = height - 40.0f;
+            textRenderer.renderText(renderer.getCurrentCommandBuffer(), prompt, promptX, promptY, 0.8f, 1.0f, true);
+        }
+
+        // Revision mode indicator at top-right (red warning)
+        if (revisionModeActive) {
+            std::string indicator = "[ REVISION MODE - TEXT VISIBLE ]";
+            float indicatorX = width - 600.0f;  // Approximate position
+            float indicatorY = 20.0f;
+            textRenderer.renderText(renderer.getCurrentCommandBuffer(), indicator, indicatorX, indicatorY, 0.7f, 1.0f, true);
+        }
 
         renderer.endFrame();
 

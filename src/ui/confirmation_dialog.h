@@ -16,6 +16,9 @@ public:
     // Process a character input for confirmation
     void processInput(char ch);
 
+    // Process backspace (delete last character)
+    void processBackspace();
+
     // Cancel confirmation
     void cancel();
 
@@ -27,6 +30,9 @@ public:
 
     // Get current input
     const std::string& getCurrentInput() const { return currentInput_; }
+
+    // Get prompt message for display
+    std::string getPromptMessage() const;
 
     // Get expected confirmation text
     static constexpr const char* CONFIRMATION_TEXT = "REVELAR";
