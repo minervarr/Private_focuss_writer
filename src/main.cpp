@@ -1,5 +1,7 @@
 #include "platform/platform_interface.h"
 #include "rendering/vulkan/vk_renderer.h"
+#include "rendering/vulkan/vk_text_renderer.h"
+#include "rendering/core/font_loader.h"
 #include "utils/logger.h"
 #include "phantom_writer/version.h"
 
@@ -69,6 +71,33 @@ int main() {
         return EXIT_FAILURE;
     }
 
+    // Load font
+    LOG_INFO(phantom::LogCategory::INIT, "Loading font");
+    phantom::FontLoader fontLoader;
+
+    if (!fontLoader.loadFromFile("assets/fonts/default_mono.ttf", 48.0f)) {
+        LOG_FATAL(phantom::LogCategory::INIT, "Failed to load font");
+        renderer.cleanup();
+        platform.cleanup();
+        phantom::Logger::shutdown();
+        return EXIT_FAILURE;
+    }
+
+    // Initialize text renderer
+    LOG_INFO(phantom::LogCategory::INIT, "Initializing text renderer");
+    phantom::VulkanTextRenderer textRenderer;
+
+    if (!textRenderer.initialize(&renderer, renderer.getRenderPass(), fontLoader.getAtlas())) {
+        LOG_FATAL(phantom::LogCategory::INIT, "Failed to initialize text renderer");
+        renderer.cleanup();
+        platform.cleanup();
+        phantom::Logger::shutdown();
+        return EXIT_FAILURE;
+    }
+
+    // Update projection matrix for text rendering
+    textRenderer.updateProjection(windowConfig.width, windowConfig.height);
+
     LOG_INFO(phantom::LogCategory::INIT, "Phantom Writer started successfully");
     LOG_INFO(phantom::LogCategory::INIT, "Entering main loop");
 
@@ -87,7 +116,12 @@ int main() {
 
         // Render frame
         renderer.beginFrame();
-        // Drawing commands would go here in future phases
+
+        // Render text: "Hello, Phantom!" centered
+        float centerX = width / 2.0f - 200.0f;  // Approximate centering
+        float centerY = height / 2.0f;
+        textRenderer.renderText(renderer.getCurrentCommandBuffer(), "Hello, Phantom!", centerX, centerY);
+
         renderer.endFrame();
 
         frameCount++;
@@ -101,6 +135,7 @@ int main() {
 
     // Cleanup
     LOG_INFO(phantom::LogCategory::INIT, "Cleaning up resources");
+    textRenderer.cleanup();
     renderer.cleanup();
     platform.cleanup();
 

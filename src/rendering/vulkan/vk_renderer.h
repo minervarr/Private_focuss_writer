@@ -28,6 +28,15 @@ public:
 
     bool isInitialized() const { return initialized_; }
 
+    // Getters for text renderer
+    VkDevice getDevice() const { return device_; }
+    VkPhysicalDevice getPhysicalDevice() const { return physicalDevice_; }
+    VkCommandPool getCommandPool() const { return commandPool_; }
+    VkQueue getGraphicsQueue() const { return graphicsQueue_; }
+    VkRenderPass getRenderPass() const { return renderPass_; }
+    VkExtent2D getSwapChainExtent() const { return swapChainExtent_; }
+    VkCommandBuffer getCurrentCommandBuffer() const { return commandBuffers_[currentFrame_]; }
+
 private:
     // Initialization steps
     bool createInstance();

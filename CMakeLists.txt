@@ -77,6 +77,7 @@ message(STATUS "Vulkan found: ${Vulkan_VERSION}")
 # ============================================================================
 
 add_subdirectory(src/utils)
+add_subdirectory(src/rendering/core)
 add_subdirectory(src/rendering/vulkan)
 add_subdirectory(src/platform/${PHANTOM_PLATFORM_DIR})
 
@@ -95,6 +96,7 @@ target_include_directories(phantom-writer PRIVATE
 
 target_link_libraries(phantom-writer PRIVATE
     phantom_utils
+    phantom_rendering_core
     phantom_rendering_vulkan
     phantom_platform_${PHANTOM_PLATFORM_DIR}
     Vulkan::Vulkan
