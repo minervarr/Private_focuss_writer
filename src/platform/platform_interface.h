@@ -71,8 +71,8 @@ enum class MouseButton {
 
 struct InputEvent {
     enum class Type {
-        KeyPress,
-        KeyRelease,
+        KeyDown,
+        KeyUp,
         KeyRepeat,
         MouseMove,
         MousePress,

@@ -1,9 +1,60 @@
 #include "window_x11.h"
 #include "utils/logger.h"
 #include <vulkan/vulkan_xlib.h>
+#include <X11/keysym.h>
+#include <X11/Xutil.h>
 #include <cstring>
 
+// X11 defines KeyPress/KeyRelease as macros which conflict with our enum
+#ifdef KeyPress
+#undef KeyPress
+#endif
+#ifdef KeyRelease
+#undef KeyRelease
+#endif
+
 namespace phantom {
+
+// Helper function to convert X11 KeySym to our KeyCode
+static KeyCode x11KeySymToKeyCode(KeySym keysym) {
+    // Letters
+    if (keysym >= XK_a && keysym <= XK_z) {
+        return static_cast<KeyCode>(static_cast<int>(KeyCode::A) + (keysym - XK_a));
+    }
+    if (keysym >= XK_A && keysym <= XK_Z) {
+        return static_cast<KeyCode>(static_cast<int>(KeyCode::A) + (keysym - XK_A));
+    }
+
+    // Numbers
+    if (keysym >= XK_0 && keysym <= XK_9) {
+        return static_cast<KeyCode>(static_cast<int>(KeyCode::Num0) + (keysym - XK_0));
+    }
+
+    // Special keys
+    switch (keysym) {
+        case XK_space: return KeyCode::Space;
+        case XK_Return: return KeyCode::Enter;
+        case XK_BackSpace: return KeyCode::Backspace;
+        case XK_Delete: return KeyCode::Delete;
+        case XK_Tab: return KeyCode::Tab;
+        case XK_Left: return KeyCode::Left;
+        case XK_Right: return KeyCode::Right;
+        case XK_Up: return KeyCode::Up;
+        case XK_Down: return KeyCode::Down;
+        case XK_Home: return KeyCode::Home;
+        case XK_End: return KeyCode::End;
+        case XK_Page_Up: return KeyCode::PageUp;
+        case XK_Page_Down: return KeyCode::PageDown;
+        case XK_Escape: return KeyCode::Escape;
+        case XK_Control_L: return KeyCode::LeftControl;
+        case XK_Control_R: return KeyCode::RightControl;
+        case XK_Shift_L: return KeyCode::LeftShift;
+        case XK_Shift_R: return KeyCode::RightShift;
+        case XK_Alt_L: return KeyCode::LeftAlt;
+        case XK_Alt_R: return KeyCode::RightAlt;
+        default: return KeyCode::Unknown;
+    }
+}
 
 WindowX11::WindowX11() {
     LOG_TRACE(LogCategory::PLATFORM, "WindowX11 constructor");
@@ -134,11 +185,39 @@ void WindowX11::pollEvents() {
                 LOG_TRACE(LogCategory::PLATFORM, "Window unmapped");
                 break;
 
-            case KeyPress:
-                LOG_TRACE(LogCategory::PLATFORM, "Key pressed: %d", event.xkey.keycode);
+            case 2:  // KeyPress (X11 macro value)
+                {
+                    KeySym keysym = XLookupKeysym(&event.xkey, 0);
+                    KeyCode key = x11KeySymToKeyCode(keysym);
+
+                    if (key != KeyCode::Unknown && inputCallback_) {
+                        InputEvent inputEvent;
+                        inputEvent.type = InputEvent::Type::KeyDown;
+                        inputEvent.data.keyboard.key = key;
+                        inputEvent.data.keyboard.shift = (event.xkey.state & ShiftMask) != 0;
+                        inputEvent.data.keyboard.ctrl = (event.xkey.state & ControlMask) != 0;
+                        inputEvent.data.keyboard.alt = (event.xkey.state & Mod1Mask) != 0;
+
+                        inputCallback_(inputEvent);
+
+                        // Also send character event for printable keys
+                        char charBuffer[32];
+                        KeySym tempKeysym;
+                        int length = ::XLookupString(&event.xkey, charBuffer, sizeof(charBuffer) - 1, &tempKeysym, nullptr);
+                        if (length > 0) {
+                            charBuffer[length] = '\0';
+                            InputEvent charEvent;
+                            charEvent.type = InputEvent::Type::Character;
+                            charEvent.data.character.codepoint = static_cast<uint32_t>(charBuffer[0]);
+                            inputCallback_(charEvent);
+                        }
+                    }
+
+                    LOG_TRACE(LogCategory::PLATFORM, "Key pressed: %d (keysym: %lu)", event.xkey.keycode, keysym);
+                }
                 break;
 
-            case KeyRelease:
+            case 3:  // KeyRelease (X11 macro value)
                 LOG_TRACE(LogCategory::PLATFORM, "Key released: %d", event.xkey.keycode);
                 break;
 

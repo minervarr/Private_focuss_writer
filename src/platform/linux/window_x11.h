@@ -4,6 +4,7 @@
 #include "../platform_interface.h"
 #include <X11/Xlib.h>
 #include <vulkan/vulkan.h>
+#include <functional>
 
 namespace phantom {
 
@@ -22,6 +23,10 @@ public:
     VkSurfaceKHR createVulkanSurface(VkInstance instance) override;
     const char** getRequiredVulkanExtensions(uint32_t& count) const override;
 
+    // Input callback
+    using InputCallback = std::function<void(const InputEvent&)>;
+    void setInputCallback(InputCallback callback) { inputCallback_ = callback; }
+
 private:
     Display* display_ = nullptr;
     Window window_ = 0;
@@ -30,6 +35,7 @@ private:
     bool isMinimized_ = false;
     int width_ = 0;
     int height_ = 0;
+    InputCallback inputCallback_;
 };
 
 } // namespace phantom

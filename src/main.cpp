@@ -1,7 +1,9 @@
 #include "platform/platform_interface.h"
+#include "platform/linux/window_x11.h"
 #include "rendering/vulkan/vk_renderer.h"
 #include "rendering/vulkan/vk_text_renderer.h"
 #include "rendering/core/font_loader.h"
+#include "core/editor_state.h"
 #include "utils/logger.h"
 #include "phantom_writer/version.h"
 
@@ -98,6 +100,71 @@ int main() {
     // Update projection matrix for text rendering
     textRenderer.updateProjection(windowConfig.width, windowConfig.height);
 
+    // Create editor state (buffer + cursor)
+    phantom::EditorState editorState;
+
+    // Setup input callback to handle keyboard events
+    auto* x11Window = dynamic_cast<phantom::WindowX11*>(platform.window);
+    if (x11Window) {
+        x11Window->setInputCallback([&editorState](const phantom::InputEvent& event) {
+            if (event.type == phantom::InputEvent::Type::Character) {
+                // Insert printable character
+                char ch = static_cast<char>(event.data.character.codepoint);
+                editorState.insertChar(ch);
+                LOG_TRACE(phantom::LogCategory::INPUT, "Character inserted: '%c'", ch);
+            }
+            else if (event.type == phantom::InputEvent::Type::KeyDown) {
+                const auto& kbd = event.data.keyboard;
+
+                // Handle special keys
+                switch (kbd.key) {
+                    case phantom::KeyCode::Backspace:
+                        editorState.deleteChar();
+                        LOG_TRACE(phantom::LogCategory::INPUT, "Backspace pressed");
+                        break;
+
+                    case phantom::KeyCode::Enter:
+                        editorState.insertChar('\n');
+                        LOG_TRACE(phantom::LogCategory::INPUT, "Enter pressed");
+                        break;
+
+                    case phantom::KeyCode::Left:
+                        editorState.getCursor().moveLeft(editorState.getBuffer());
+                        LOG_TRACE(phantom::LogCategory::INPUT, "Left arrow pressed");
+                        break;
+
+                    case phantom::KeyCode::Right:
+                        editorState.getCursor().moveRight(editorState.getBuffer());
+                        LOG_TRACE(phantom::LogCategory::INPUT, "Right arrow pressed");
+                        break;
+
+                    case phantom::KeyCode::Up:
+                        editorState.getCursor().moveUp(editorState.getBuffer());
+                        LOG_TRACE(phantom::LogCategory::INPUT, "Up arrow pressed");
+                        break;
+
+                    case phantom::KeyCode::Down:
+                        editorState.getCursor().moveDown(editorState.getBuffer());
+                        LOG_TRACE(phantom::LogCategory::INPUT, "Down arrow pressed");
+                        break;
+
+                    case phantom::KeyCode::Home:
+                        editorState.getCursor().moveToLineStart(editorState.getBuffer());
+                        LOG_TRACE(phantom::LogCategory::INPUT, "Home pressed");
+                        break;
+
+                    case phantom::KeyCode::End:
+                        editorState.getCursor().moveToLineEnd(editorState.getBuffer());
+                        LOG_TRACE(phantom::LogCategory::INPUT, "End pressed");
+                        break;
+
+                    default:
+                        break;
+                }
+            }
+        });
+    }
+
     LOG_INFO(phantom::LogCategory::INIT, "Phantom Writer started successfully");
     LOG_INFO(phantom::LogCategory::INIT, "Entering main loop");
 
@@ -117,10 +184,16 @@ int main() {
         // Render frame
         renderer.beginFrame();
 
-        // Render text: "Hello, Phantom!" centered
-        float centerX = width / 2.0f - 200.0f;  // Approximate centering
-        float centerY = height / 2.0f;
-        textRenderer.renderText(renderer.getCurrentCommandBuffer(), "Hello, Phantom!", centerX, centerY);
+        // Render buffer content
+        std::string bufferText = editorState.getBuffer().getText();
+        if (bufferText.empty()) {
+            bufferText = "";  // Show empty if nothing typed yet
+        }
+
+        // Render at top-left with some padding
+        float textX = 20.0f;
+        float textY = 50.0f;
+        textRenderer.renderText(renderer.getCurrentCommandBuffer(), bufferText, textX, textY);
 
         renderer.endFrame();
 
