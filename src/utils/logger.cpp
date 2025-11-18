@@ -54,7 +54,7 @@ const char* Logger::getLevelString(LogLevel level) {
         case LogLevel::DEBUG: return "DEBUG";
         case LogLevel::INFO:  return "INFO";
         case LogLevel::WARN:  return "WARN";
-        case LogLevel::ERROR: return "ERROR";
+        case LogLevel::ERR:   return "ERROR";
         case LogLevel::FATAL: return "FATAL";
         default: return "UNKNOWN";
     }
@@ -116,7 +116,7 @@ void Logger::logInternal(LogLevel level, const char* file, int line, const char*
             case LogLevel::DEBUG: colorCode = "\033[36m"; break;  // Cyan
             case LogLevel::INFO:  colorCode = "\033[32m"; break;  // Verde
             case LogLevel::WARN:  colorCode = "\033[33m"; break;  // Amarillo
-            case LogLevel::ERROR: colorCode = "\033[31m"; break;  // Rojo
+            case LogLevel::ERR:   colorCode = "\033[31m"; break;  // Rojo
             case LogLevel::FATAL: colorCode = "\033[91m"; break;  // Rojo brillante
         }
 
