@@ -8,6 +8,7 @@
 #include "phantom_writer/version.h"
 
 #include <cstdlib>
+#include <chrono>
 
 int main() {
     // Initialize logger
@@ -130,31 +131,37 @@ int main() {
 
                     case phantom::KeyCode::Left:
                         editorState.getCursor().moveLeft(editorState.getBuffer());
+                        editorState.getOpacityManager().onActivity();
                         LOG_TRACE(phantom::LogCategory::INPUT, "Left arrow pressed");
                         break;
 
                     case phantom::KeyCode::Right:
                         editorState.getCursor().moveRight(editorState.getBuffer());
+                        editorState.getOpacityManager().onActivity();
                         LOG_TRACE(phantom::LogCategory::INPUT, "Right arrow pressed");
                         break;
 
                     case phantom::KeyCode::Up:
                         editorState.getCursor().moveUp(editorState.getBuffer());
+                        editorState.getOpacityManager().onActivity();
                         LOG_TRACE(phantom::LogCategory::INPUT, "Up arrow pressed");
                         break;
 
                     case phantom::KeyCode::Down:
                         editorState.getCursor().moveDown(editorState.getBuffer());
+                        editorState.getOpacityManager().onActivity();
                         LOG_TRACE(phantom::LogCategory::INPUT, "Down arrow pressed");
                         break;
 
                     case phantom::KeyCode::Home:
                         editorState.getCursor().moveToLineStart(editorState.getBuffer());
+                        editorState.getOpacityManager().onActivity();
                         LOG_TRACE(phantom::LogCategory::INPUT, "Home pressed");
                         break;
 
                     case phantom::KeyCode::End:
                         editorState.getCursor().moveToLineEnd(editorState.getBuffer());
+                        editorState.getOpacityManager().onActivity();
                         LOG_TRACE(phantom::LogCategory::INPUT, "End pressed");
                         break;
 
@@ -168,9 +175,20 @@ int main() {
     LOG_INFO(phantom::LogCategory::INIT, "Phantom Writer started successfully");
     LOG_INFO(phantom::LogCategory::INIT, "Entering main loop");
 
-    // Main loop
+    // Main loop with delta time tracking
     uint64_t frameCount = 0;
+    auto lastFrameTime = std::chrono::high_resolution_clock::now();
+
     while (!platform.window->shouldClose()) {
+        // Calculate delta time
+        auto currentFrameTime = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<float> deltaTime = currentFrameTime - lastFrameTime;
+        lastFrameTime = currentFrameTime;
+        float deltaSeconds = deltaTime.count();
+
+        // Update opacity manager
+        editorState.getOpacityManager().update(deltaSeconds);
+
         // Poll events
         platform.window->pollEvents();
 
@@ -190,10 +208,16 @@ int main() {
             bufferText = "";  // Show empty if nothing typed yet
         }
 
+        // Calculate opacity for the current line
+        // For now, we render all text with the same opacity (full opacity or reduced based on typing state)
+        // In a more sophisticated implementation, we would render line by line with different opacities
+        float opacity = editorState.getOpacityManager().isIdle() ? 1.0f :
+                        editorState.getOpacityManager().getPreviousLinesOpacity();
+
         // Render at top-left with some padding
         float textX = 20.0f;
         float textY = 50.0f;
-        textRenderer.renderText(renderer.getCurrentCommandBuffer(), bufferText, textX, textY);
+        textRenderer.renderText(renderer.getCurrentCommandBuffer(), bufferText, textX, textY, 1.0f, opacity);
 
         renderer.endFrame();
 

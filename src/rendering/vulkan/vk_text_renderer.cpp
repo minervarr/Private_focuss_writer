@@ -285,7 +285,7 @@ bool VulkanTextRenderer::createPipeline() {
     VkPushConstantRange pushConstantRange{};
     pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
     pushConstantRange.offset = 0;
-    pushConstantRange.size = sizeof(float) * 16; // 4x4 matrix
+    pushConstantRange.size = sizeof(float) * 17; // 4x4 matrix + opacity float
 
     // Pipeline layout
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
@@ -370,10 +370,12 @@ void VulkanTextRenderer::updateProjection(int width, int height) {
 }
 
 void VulkanTextRenderer::renderText(VkCommandBuffer commandBuffer, const std::string& text,
-                                    float x, float y, float scale) {
+                                    float x, float y, float scale, float opacity) {
     if (!initialized_ || text.empty()) {
         return;
     }
+
+    LOG_TRACE(LogCategory::RENDER, "Rendering text with opacity: %.2f", opacity);
 
     // Build vertex data for all characters
     std::vector<TextVertex> vertices;

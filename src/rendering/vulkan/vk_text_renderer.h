@@ -26,8 +26,8 @@ public:
     bool initialize(VulkanRenderer* renderer, VkRenderPass renderPass, const FontAtlas& atlas);
     void cleanup();
 
-    // Render text at specified position
-    void renderText(VkCommandBuffer commandBuffer, const std::string& text, float x, float y, float scale = 1.0f);
+    // Render text at specified position with opacity
+    void renderText(VkCommandBuffer commandBuffer, const std::string& text, float x, float y, float scale = 1.0f, float opacity = 1.0f);
 
     // Update projection matrix (call when window resizes)
     void updateProjection(int width, int height);

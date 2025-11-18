@@ -1,6 +1,7 @@
 add_library(phantom_rendering_core STATIC
     font_loader.cpp
     glyph_fragmenter.cpp
+    opacity_manager.cpp
 )
 
 target_include_directories(phantom_rendering_core PUBLIC

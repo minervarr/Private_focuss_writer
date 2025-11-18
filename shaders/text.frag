@@ -3,6 +3,7 @@
 // Input from vertex shader
 layout(location = 0) in vec2 fragTexCoord;
 layout(location = 1) flat in uint fragMode;
+layout(location = 2) in float fragOpacity;
 
 // Output color
 layout(location = 0) out vec4 outColor;
@@ -24,6 +25,9 @@ void main() {
 
     // Sample the alpha from the atlas with adjusted coordinates
     float alpha = texture(fontAtlas, adjustedTexCoord).r;
+
+    // Apply opacity from push constant
+    alpha *= fragOpacity;
 
     // Output white text with sampled alpha
     outColor = vec4(1.0, 1.0, 1.0, alpha);
