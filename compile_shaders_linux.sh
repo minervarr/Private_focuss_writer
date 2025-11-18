@@ -6,31 +6,35 @@ set -e  # Exit on error
 
 echo "Compiling Vulkan shaders..."
 
-# Try to find glslc
-GLSLC="glslc"
+# Try to find shader compiler (prefer glslc, fallback to glslangValidator)
+COMPILER=""
+COMPILER_ARGS=""
 
-# Check if glslc is in PATH
-if ! command -v $GLSLC &> /dev/null; then
-    echo "ERROR: glslc not found in PATH"
-    echo "Please make sure the Vulkan SDK is installed and in your PATH"
-    echo "You can install it via:"
-    echo "  - Ubuntu/Debian: sudo apt install vulkan-tools vulkan-sdk"
-    echo "  - Arch: sudo pacman -S vulkan-tools shaderc"
-    echo "  - Or download from: https://vulkan.lunarg.com/sdk/home"
-    echo ""
-    echo "After installing, you may need to source the setup script:"
-    echo "  source /path/to/vulkan/sdk/setup-env.sh"
+if command -v glslc &> /dev/null; then
+    COMPILER="glslc"
+    COMPILER_ARGS=""
+    echo "Using glslc compiler"
+elif command -v glslangValidator &> /dev/null; then
+    COMPILER="glslangValidator"
+    COMPILER_ARGS="-V"
+    echo "Using glslangValidator compiler"
+else
+    echo "ERROR: No Vulkan shader compiler found"
+    echo "Please install one of the following:"
+    echo "  - Ubuntu/Debian: sudo apt install glslang-tools"
+    echo "  - Arch: sudo pacman -S shaderc"
+    echo "  - Or download Vulkan SDK from: https://vulkan.lunarg.com/sdk/home"
     exit 1
 fi
 
 # Compile vertex shader
 echo "Compiling text.vert..."
-$GLSLC shaders/text.vert -o shaders/text_vert.spv
+$COMPILER $COMPILER_ARGS shaders/text.vert -o shaders/text_vert.spv
 echo "  text_vert.spv created"
 
 # Compile fragment shader
 echo "Compiling text.frag..."
-$GLSLC shaders/text.frag -o shaders/text_frag.spv
+$COMPILER $COMPILER_ARGS shaders/text.frag -o shaders/text_frag.spv
 echo "  text_frag.spv created"
 
 echo ""

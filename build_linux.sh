@@ -30,7 +30,8 @@ echo -e "${GREEN}✓ CMake found${NC}"
 if ! command -v glslc &> /dev/null && ! command -v glslangValidator &> /dev/null; then
     echo -e "${RED}ERROR: No Vulkan shader compiler found${NC}"
     echo "Install Vulkan SDK:"
-    echo "  - Ubuntu/Debian: sudo apt install vulkan-tools libvulkan-dev vulkan-validationlayers"
+    echo "  - Ubuntu/Debian: sudo apt install glslang-tools libvulkan-dev"
+    echo "  - Arch: sudo pacman -S shaderc vulkan-devel"
     echo "  - Or download from: https://vulkan.lunarg.com/sdk/home"
     exit 1
 fi
