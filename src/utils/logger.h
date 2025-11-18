@@ -11,7 +11,7 @@ enum class LogLevel {
     DEBUG,    // Solo Debug - Info de desarrollo
     INFO,     // Ambos - Info general
     WARN,     // Ambos - Advertencias
-    ERROR,    // Ambos - Errores
+    ERR,      // Ambos - Errores (renamed from ERROR to avoid Windows macro conflict)
     FATAL     // Ambos - Errores críticos
 };
 
@@ -61,7 +61,7 @@ private:
 
 #define LOG_INFO(category, ...)  phantom::Logger::log(phantom::LogLevel::INFO, __FILE__, __LINE__, category, __VA_ARGS__)
 #define LOG_WARN(category, ...)  phantom::Logger::log(phantom::LogLevel::WARN, __FILE__, __LINE__, category, __VA_ARGS__)
-#define LOG_ERROR(category, ...) phantom::Logger::log(phantom::LogLevel::ERROR, __FILE__, __LINE__, category, __VA_ARGS__)
+#define LOG_ERROR(category, ...) phantom::Logger::log(phantom::LogLevel::ERR, __FILE__, __LINE__, category, __VA_ARGS__)
 #define LOG_FATAL(category, ...) phantom::Logger::log(phantom::LogLevel::FATAL, __FILE__, __LINE__, category, __VA_ARGS__)
 
 } // namespace phantom
