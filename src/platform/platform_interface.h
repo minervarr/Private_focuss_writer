@@ -40,6 +40,10 @@ public:
     virtual void getFramebufferSize(int& width, int& height) const = 0;
     virtual bool isMinimized() const = 0;
 
+    // Input callback
+    using InputCallback = std::function<void(const InputEvent&)>;
+    virtual void setInputCallback(InputCallback callback) = 0;
+
     // Vulkan integration
     virtual VkSurfaceKHR createVulkanSurface(VkInstance instance) = 0;
     virtual const char** getRequiredVulkanExtensions(uint32_t& count) const = 0;

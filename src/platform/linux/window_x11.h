@@ -20,12 +20,9 @@ public:
     void pollEvents() override;
     void getFramebufferSize(int& width, int& height) const override;
     bool isMinimized() const override;
+    void setInputCallback(InputCallback callback) override { inputCallback_ = callback; }
     VkSurfaceKHR createVulkanSurface(VkInstance instance) override;
     const char** getRequiredVulkanExtensions(uint32_t& count) const override;
-
-    // Input callback
-    using InputCallback = std::function<void(const InputEvent&)>;
-    void setInputCallback(InputCallback callback) { inputCallback_ = callback; }
 
 private:
     Display* display_ = nullptr;

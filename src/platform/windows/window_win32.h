@@ -20,12 +20,9 @@ public:
     void pollEvents() override;
     void getFramebufferSize(int& width, int& height) const override;
     bool isMinimized() const override;
+    void setInputCallback(InputCallback callback) override { inputCallback_ = callback; }
     VkSurfaceKHR createVulkanSurface(VkInstance instance) override;
     const char** getRequiredVulkanExtensions(uint32_t& count) const override;
-
-    // Input callback
-    using InputCallback = std::function<void(const InputEvent&)>;
-    void setInputCallback(InputCallback callback) { inputCallback_ = callback; }
 
     // Get HWND for Vulkan surface creation
     HWND getHWND() const { return hwnd_; }
@@ -37,9 +34,6 @@ private:
 
     // Instance window procedure
     LRESULT windowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
-
-    // Key translation
-    KeyCode translateKeyCode(WPARAM wParam, LPARAM lParam) const;
 
     HINSTANCE hInstance_ = nullptr;
     HWND hwnd_ = nullptr;

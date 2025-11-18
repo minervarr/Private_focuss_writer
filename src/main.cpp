@@ -1,5 +1,4 @@
 #include "platform/platform_interface.h"
-#include "platform/linux/window_x11.h"
 #include "rendering/vulkan/vk_renderer.h"
 #include "rendering/vulkan/vk_text_renderer.h"
 #include "rendering/core/font_loader.h"
@@ -127,10 +126,8 @@ int main() {
     // Start autosave thread
     editorState.startAutosave();
 
-    // Setup input callback to handle keyboard events
-    auto* x11Window = dynamic_cast<phantom::WindowX11*>(platform.window);
-    if (x11Window) {
-        x11Window->setInputCallback([&editorState](const phantom::InputEvent& event) {
+    // Setup input callback to handle keyboard events (cross-platform)
+    platform.window->setInputCallback([&editorState](const phantom::InputEvent& event) {
             if (event.type == phantom::InputEvent::Type::Character) {
                 // If confirmation dialog is active, route input to it
                 if (editorState.getConfirmationDialog()->isActive()) {
@@ -239,8 +236,7 @@ int main() {
                         break;
                 }
             }
-        });
-    }
+    });
 
     LOG_INFO(phantom::LogCategory::INIT, "Phantom Writer started successfully");
     LOG_INFO(phantom::LogCategory::INIT, "Entering main loop");
