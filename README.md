@@ -5,10 +5,11 @@ A high-performance, distraction-free text editor built with Vulkan rendering and
 ## Features
 
 - **Vulkan-based Rendering**: Hardware-accelerated text rendering for smooth performance
-- **Cross-Platform**: Supports both Windows and Linux
+- **Cross-Platform**: Supports Windows, Linux, and Android
 - **Minimal Interface**: Focus on your writing without distractions
 - **Revision Mode**: Track and manage document revisions
 - **Auto-save**: Never lose your work with automatic saving and swap files
+- **X11 Exclusive Fullscreen**: Maximum GPU performance on Linux
 
 ## Platform Support
 
@@ -30,6 +31,17 @@ Quick start:
 ```bash
 ./build_linux.sh
 ```
+
+### Android
+
+Android 8.0+ with Vulkan support
+
+See [README_ANDROID.md](README_ANDROID.md) for detailed Android build instructions.
+
+Quick start:
+1. Open `android/` directory in Android Studio
+2. Sync Gradle
+3. Run on device/emulator
 
 ## Quick Start
 
