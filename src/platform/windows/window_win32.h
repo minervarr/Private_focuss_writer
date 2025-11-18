@@ -20,6 +20,9 @@ public:
     void pollEvents() override;
     void getFramebufferSize(int& width, int& height) const override;
     bool isMinimized() const override;
+    bool isFullscreen() const override;
+    void setFullscreen(bool fullscreen, bool exclusive = false) override;
+    void toggleFullscreen() override;
     void setInputCallback(InputCallback callback) override { inputCallback_ = callback; }
     VkSurfaceKHR createVulkanSurface(VkInstance instance) override;
     const char** getRequiredVulkanExtensions(uint32_t& count) const override;

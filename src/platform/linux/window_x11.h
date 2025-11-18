@@ -20,18 +20,30 @@ public:
     void pollEvents() override;
     void getFramebufferSize(int& width, int& height) const override;
     bool isMinimized() const override;
+    bool isFullscreen() const override;
+    void setFullscreen(bool fullscreen, bool exclusive = false) override;
+    void toggleFullscreen() override;
     void setInputCallback(InputCallback callback) override { inputCallback_ = callback; }
     VkSurfaceKHR createVulkanSurface(VkInstance instance) override;
     const char** getRequiredVulkanExtensions(uint32_t& count) const override;
 
 private:
+    void applyFullscreenState();
+    void updateWindowState(Atom state, bool enable);
+
     Display* display_ = nullptr;
     Window window_ = 0;
     Atom wmDeleteMessage_ = 0;
     bool shouldClose_ = false;
     bool isMinimized_ = false;
+    bool isFullscreen_ = false;
+    bool exclusiveFullscreen_ = false;
     int width_ = 0;
     int height_ = 0;
+    int windowedWidth_ = 0;   // Store windowed size for restoration
+    int windowedHeight_ = 0;
+    int windowedX_ = 0;       // Store windowed position
+    int windowedY_ = 0;
     InputCallback inputCallback_;
 };
 

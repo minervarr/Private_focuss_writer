@@ -72,6 +72,62 @@ endif()
 find_package(Vulkan REQUIRED)
 message(STATUS "Vulkan found: ${Vulkan_VERSION}")
 
+# Find shader compiler
+if(Vulkan_GLSLC_EXECUTABLE)
+    set(GLSL_COMPILER ${Vulkan_GLSLC_EXECUTABLE})
+    message(STATUS "Using glslc for shader compilation")
+elseif(Vulkan_GLSLANG_VALIDATOR_EXECUTABLE)
+    set(GLSL_COMPILER ${Vulkan_GLSLANG_VALIDATOR_EXECUTABLE})
+    set(GLSL_COMPILER_ARGS "-V")
+    message(STATUS "Using glslangValidator for shader compilation")
+else()
+    message(FATAL_ERROR "No Vulkan shader compiler found (glslc or glslangValidator)")
+endif()
+
+# ============================================================================
+# Shader Compilation
+# ============================================================================
+
+set(SHADER_SOURCE_DIR ${CMAKE_SOURCE_DIR}/shaders)
+set(SHADER_BINARY_DIR ${CMAKE_BINARY_DIR}/shaders)
+
+# Create shader output directory
+file(MAKE_DIRECTORY ${SHADER_BINARY_DIR})
+
+# Shader source files
+set(VERTEX_SHADER ${SHADER_SOURCE_DIR}/text.vert)
+set(FRAGMENT_SHADER ${SHADER_SOURCE_DIR}/text.frag)
+
+# Shader output files
+set(VERTEX_SHADER_SPV ${SHADER_BINARY_DIR}/text_vert.spv)
+set(FRAGMENT_SHADER_SPV ${SHADER_BINARY_DIR}/text_frag.spv)
+
+# Custom command to compile vertex shader
+add_custom_command(
+    OUTPUT ${VERTEX_SHADER_SPV}
+    COMMAND ${GLSL_COMPILER} ${GLSL_COMPILER_ARGS} ${VERTEX_SHADER} -o ${VERTEX_SHADER_SPV}
+    DEPENDS ${VERTEX_SHADER}
+    COMMENT "Compiling vertex shader: text.vert"
+    VERBATIM
+)
+
+# Custom command to compile fragment shader
+add_custom_command(
+    OUTPUT ${FRAGMENT_SHADER_SPV}
+    COMMAND ${GLSL_COMPILER} ${GLSL_COMPILER_ARGS} ${FRAGMENT_SHADER} -o ${FRAGMENT_SHADER_SPV}
+    DEPENDS ${FRAGMENT_SHADER}
+    COMMENT "Compiling fragment shader: text.frag"
+    VERBATIM
+)
+
+# Custom target that depends on all compiled shaders
+add_custom_target(compile_shaders ALL
+    DEPENDS ${VERTEX_SHADER_SPV} ${FRAGMENT_SHADER_SPV}
+    COMMENT "Compiling all shaders"
+)
+
+message(STATUS "Shader compilation configured")
+
 # ============================================================================
 # Subdirectorios
 # ============================================================================
@@ -107,6 +163,36 @@ target_link_libraries(phantom-writer PRIVATE
     phantom_platform_${PHANTOM_PLATFORM_DIR}
     Vulkan::Vulkan
 )
+
+# Make executable depend on shader compilation
+add_dependencies(phantom-writer compile_shaders)
+
+# ============================================================================
+# Asset Deployment
+# ============================================================================
+
+# Copy shaders to binary directory
+add_custom_command(TARGET phantom-writer POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/bin/shaders
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        ${VERTEX_SHADER_SPV}
+        ${CMAKE_BINARY_DIR}/bin/shaders/text_vert.spv
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        ${FRAGMENT_SHADER_SPV}
+        ${CMAKE_BINARY_DIR}/bin/shaders/text_frag.spv
+    COMMENT "Copying compiled shaders to binary directory"
+)
+
+# Copy fonts to binary directory
+add_custom_command(TARGET phantom-writer POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/bin/assets/fonts
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_SOURCE_DIR}/assets/fonts
+        ${CMAKE_BINARY_DIR}/bin/assets/fonts
+    COMMENT "Copying fonts to binary directory"
+)
+
+message(STATUS "Asset deployment configured")
 
 # ============================================================================
 # Instalación
