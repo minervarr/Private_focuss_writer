@@ -18,7 +18,11 @@
 ## Quick Start (Easiest Method)
 
 1. Open terminal in project root
-2. Run these commands:
+2. **FIRST: Compile the shaders** (requires Vulkan SDK in PATH):
+```cmd
+compile_shaders_windows.bat
+```
+3. Then build and run:
 ```cmd
 mkdir build
 cd build
@@ -28,6 +32,11 @@ cd ..
 copy_assets_windows.bat
 cd build\bin\Debug
 phantom-writer.exe
+```
+
+**Note**: If `glslc.exe` is not found, make sure Vulkan SDK's `Bin` folder is in your PATH:
+```cmd
+set PATH=%PATH%;C:\VulkanSDK\1.3.xxx.x\Bin
 ```
 
 ## Build Steps
@@ -105,19 +114,34 @@ If the font is missing, you can use any monospace TTF font (like Consolas, Couri
 
 ## Troubleshooting
 
+### "Failed to open shader file: shaders/text_vert.spv"
+
+**Cause**: Shaders were not compiled or not copied.
+
+**Solution**:
+1. **FIRST**: Compile shaders by running `compile_shaders_windows.bat`
+   - This creates `text_vert.spv` and `text_frag.spv` from the GLSL source files
+   - Requires Vulkan SDK's `glslc.exe` to be in PATH
+2. **THEN**: Run `copy_assets_windows.bat` to copy the compiled shaders to the build directory
+3. Verify these files exist in your shader directory:
+   - `shaders/text_vert.spv` (compiled vertex shader, ~1.6KB)
+   - `shaders/text_frag.spv` (compiled fragment shader, ~1.5KB)
+   - NOT `text.vert` or `text.frag` (those are source files)
+
 ### Program Closes Immediately
 
 **Cause**: Font file or shader files not found.
 
 **Solution**:
-1. Run `copy_assets_windows.bat` from project root
-2. Or manually copy both:
+1. Make sure you compiled shaders first: `compile_shaders_windows.bat`
+2. Run `copy_assets_windows.bat` from project root
+3. Or manually copy both:
    - `assets/` folder to the same directory as `phantom-writer.exe`
    - `shaders/` folder to the same directory as `phantom-writer.exe`
-3. Make sure these files exist:
+4. Verify these files exist in `build\bin\Debug\`:
    - `assets/fonts/default_mono.ttf`
-   - `shaders/text_vert.spv`
-   - `shaders/text_frag.spv`
+   - `shaders/text_vert.spv` (NOT text.vert)
+   - `shaders/text_frag.spv` (NOT text.frag)
 
 The program will show a MessageBox with error details if something fails.
 
