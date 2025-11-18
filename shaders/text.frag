@@ -14,14 +14,15 @@ layout(binding = 0) uniform sampler2D fontAtlas;
 void main() {
     vec2 adjustedTexCoord = fragTexCoord;
 
-    // Fragmentación: mostrar solo mitad superior o inferior
+    // Fragmentación: mostrar solo mitad superior, inferior, o completo
     if (fragMode == 0) {
         // Mitad superior: Y de 0.0 a 0.5
         adjustedTexCoord.y *= 0.5;
-    } else {
+    } else if (fragMode == 1) {
         // Mitad inferior: Y de 0.5 a 1.0
         adjustedTexCoord.y = 0.5 + adjustedTexCoord.y * 0.5;
     }
+    // fragMode == 2 (None): usar texCoord sin modificar
 
     // Sample the alpha from the atlas with adjusted coordinates
     float alpha = texture(fontAtlas, adjustedTexCoord).r;

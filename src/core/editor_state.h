@@ -11,8 +11,10 @@ namespace phantom {
 
 class SwapFile;
 class Autosave;
+class RevisionMode;
+class ConfirmationDialog;
 
-// Simple editor state that holds buffer, cursor, opacity manager, and persistence
+// Simple editor state that holds buffer, cursor, opacity manager, persistence, and UI state
 class EditorState {
 public:
     EditorState(const std::string& filePath = "");
@@ -29,6 +31,9 @@ public:
 
     SwapFile* getSwapFile() { return swapFile_.get(); }
     Autosave* getAutosave() { return autosave_.get(); }
+
+    RevisionMode* getRevisionMode() { return revisionMode_.get(); }
+    ConfirmationDialog* getConfirmationDialog() { return confirmationDialog_.get(); }
 
     // Persistence
     void startAutosave();
@@ -68,6 +73,9 @@ private:
 
     std::unique_ptr<SwapFile> swapFile_;
     std::unique_ptr<Autosave> autosave_;
+
+    std::unique_ptr<RevisionMode> revisionMode_;
+    std::unique_ptr<ConfirmationDialog> confirmationDialog_;
 };
 
 } // namespace phantom

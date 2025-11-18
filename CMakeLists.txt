@@ -81,6 +81,7 @@ add_subdirectory(src/core)
 add_subdirectory(src/rendering/core)
 add_subdirectory(src/rendering/vulkan)
 add_subdirectory(src/persistence)
+add_subdirectory(src/ui)
 add_subdirectory(src/platform/${PHANTOM_PLATFORM_DIR})
 
 # ============================================================================
@@ -102,6 +103,7 @@ target_link_libraries(phantom-writer PRIVATE
     phantom_rendering_core
     phantom_rendering_vulkan
     phantom_persistence
+    phantom_ui
     phantom_platform_${PHANTOM_PLATFORM_DIR}
     Vulkan::Vulkan
 )

@@ -13,4 +13,5 @@ target_link_libraries(phantom_core PUBLIC
     phantom_utils
     phantom_rendering_core
     phantom_persistence
+    phantom_ui
 )

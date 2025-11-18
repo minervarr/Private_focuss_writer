@@ -370,12 +370,13 @@ void VulkanTextRenderer::updateProjection(int width, int height) {
 }
 
 void VulkanTextRenderer::renderText(VkCommandBuffer commandBuffer, const std::string& text,
-                                    float x, float y, float scale, float opacity) {
+                                    float x, float y, float scale, float opacity, bool disableFragmentation) {
     if (!initialized_ || text.empty()) {
         return;
     }
 
-    LOG_TRACE(LogCategory::RENDER, "Rendering text with opacity: %.2f", opacity);
+    LOG_TRACE(LogCategory::RENDER, "Rendering text with opacity: %.2f, fragmentation: %s",
+              opacity, disableFragmentation ? "disabled" : "enabled");
 
     // Build vertex data for all characters
     std::vector<TextVertex> vertices;
@@ -408,7 +409,12 @@ void VulkanTextRenderer::renderText(VkCommandBuffer commandBuffer, const std::st
         const Glyph& glyph = atlas_->glyphs[ch - 32];
 
         // Determine fragment mode using the fragmenter
-        FragmentMode mode = fragmenter_->getFragmentMode(currentLine, currentColumn);
+        FragmentMode mode;
+        if (disableFragmentation) {
+            mode = FragmentMode::None;
+        } else {
+            mode = fragmenter_->getFragmentMode(currentLine, currentColumn);
+        }
         uint32_t fragmentMode = static_cast<uint32_t>(mode);
 
         // Calculate quad positions

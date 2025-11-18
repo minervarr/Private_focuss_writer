@@ -5,6 +5,8 @@
 #include "rendering/core/font_loader.h"
 #include "core/editor_state.h"
 #include "persistence/swap_file.h"
+#include "ui/revision_mode.h"
+#include "ui/confirmation_dialog.h"
 #include "utils/logger.h"
 #include "phantom_writer/version.h"
 
@@ -130,13 +132,36 @@ int main() {
     if (x11Window) {
         x11Window->setInputCallback([&editorState](const phantom::InputEvent& event) {
             if (event.type == phantom::InputEvent::Type::Character) {
-                // Insert printable character
+                // If confirmation dialog is active, route input to it
+                if (editorState.getConfirmationDialog()->isActive()) {
+                    char ch = static_cast<char>(event.data.character.codepoint);
+                    editorState.getConfirmationDialog()->processInput(ch);
+                    LOG_TRACE(phantom::LogCategory::UI, "Confirmation input: '%c'", ch);
+
+                    // Check if confirmation succeeded
+                    if (editorState.getConfirmationDialog()->isConfirmed()) {
+                        editorState.getRevisionMode()->activate();
+                        LOG_INFO(phantom::LogCategory::UI, "Revision mode activated");
+                    }
+                    return;
+                }
+
+                // Insert printable character (only if not in confirmation dialog)
                 char ch = static_cast<char>(event.data.character.codepoint);
                 editorState.insertChar(ch);
                 LOG_TRACE(phantom::LogCategory::INPUT, "Character inserted: '%c'", ch);
             }
             else if (event.type == phantom::InputEvent::Type::KeyDown) {
                 const auto& kbd = event.data.keyboard;
+
+                // Handle Ctrl+R (activate revision mode)
+                if (kbd.ctrl && kbd.key == phantom::KeyCode::R) {
+                    if (!editorState.getRevisionMode()->isActive()) {
+                        editorState.getConfirmationDialog()->startConfirmation();
+                        LOG_INFO(phantom::LogCategory::UI, "Confirmation dialog shown");
+                    }
+                    return;
+                }
 
                 // Handle Ctrl+S (manual save)
                 if (kbd.ctrl && kbd.key == phantom::KeyCode::S) {
@@ -147,6 +172,17 @@ int main() {
 
                 // Handle special keys
                 switch (kbd.key) {
+                    case phantom::KeyCode::Escape:
+                        // Deactivate revision mode or cancel confirmation dialog
+                        if (editorState.getRevisionMode()->isActive()) {
+                            editorState.getRevisionMode()->deactivate();
+                            LOG_INFO(phantom::LogCategory::UI, "Revision mode deactivated");
+                        } else if (editorState.getConfirmationDialog()->isActive()) {
+                            editorState.getConfirmationDialog()->cancel();
+                            LOG_INFO(phantom::LogCategory::UI, "Confirmation dialog cancelled");
+                        }
+                        break;
+
                     case phantom::KeyCode::Backspace:
                         editorState.deleteChar();
                         LOG_TRACE(phantom::LogCategory::INPUT, "Backspace pressed");
@@ -236,16 +272,25 @@ int main() {
             bufferText = "";  // Show empty if nothing typed yet
         }
 
-        // Calculate opacity for the current line
-        // For now, we render all text with the same opacity (full opacity or reduced based on typing state)
-        // In a more sophisticated implementation, we would render line by line with different opacities
-        float opacity = editorState.getOpacityManager().isIdle() ? 1.0f :
-                        editorState.getOpacityManager().getPreviousLinesOpacity();
+        // Check if revision mode is active
+        bool revisionModeActive = editorState.getRevisionMode()->isActive();
+
+        // Calculate opacity - full opacity in revision mode, otherwise based on typing state
+        float opacity;
+        if (revisionModeActive) {
+            opacity = 1.0f;  // Full opacity in revision mode
+        } else {
+            opacity = editorState.getOpacityManager().isIdle() ? 1.0f :
+                      editorState.getOpacityManager().getPreviousLinesOpacity();
+        }
+
+        // Disable fragmentation in revision mode
+        bool disableFragmentation = revisionModeActive;
 
         // Render at top-left with some padding
         float textX = 20.0f;
         float textY = 50.0f;
-        textRenderer.renderText(renderer.getCurrentCommandBuffer(), bufferText, textX, textY, 1.0f, opacity);
+        textRenderer.renderText(renderer.getCurrentCommandBuffer(), bufferText, textX, textY, 1.0f, opacity, disableFragmentation);
 
         renderer.endFrame();
 

@@ -8,7 +8,8 @@ namespace phantom {
 
 enum class FragmentMode : uint32_t {
     Top = 0,     // Show top half of glyph
-    Bottom = 1   // Show bottom half of glyph
+    Bottom = 1,  // Show bottom half of glyph
+    None = 2     // Show full glyph (no fragmentation)
 };
 
 class GlyphFragmenter {

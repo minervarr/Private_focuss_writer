@@ -1,6 +1,8 @@
 #include "editor_state.h"
 #include "persistence/swap_file.h"
 #include "persistence/autosave.h"
+#include "ui/revision_mode.h"
+#include "ui/confirmation_dialog.h"
 #include "utils/logger.h"
 
 namespace phantom {
@@ -15,6 +17,10 @@ EditorState::EditorState(const std::string& filePath)
 
     // Create autosave manager (but don't start it yet)
     autosave_ = std::make_unique<Autosave>(swapFile_.get(), buffer_, cursor_);
+
+    // Create UI components
+    revisionMode_ = std::make_unique<RevisionMode>();
+    confirmationDialog_ = std::make_unique<ConfirmationDialog>();
 }
 
 EditorState::~EditorState() {
