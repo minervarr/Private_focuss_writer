@@ -69,18 +69,18 @@ cmake --build . --config Release
 
 ## IMPORTANT: Copy Assets After Building
 
-After building, you MUST copy the assets folder to the executable directory:
+After building, you MUST copy the assets and shaders to the executable directory:
 
 ```cmd
 copy_assets_windows.bat
 ```
 
-This script copies the `assets/` folder to:
-- `build/bin/Debug/assets/`
-- `build/bin/Release/assets/`
-- `build/bin/assets/`
+This script copies:
+- `assets/fonts/` → `build/bin/Debug/assets/fonts/`
+- `shaders/*.spv` → `build/bin/Debug/shaders/`
+- (Same for Release and bin directories)
 
-**Without this step, the program will crash immediately** because it can't find the font file.
+**Without this step, the program will crash immediately** because it can't find the font file or shader files.
 
 ## Running
 
@@ -107,12 +107,17 @@ If the font is missing, you can use any monospace TTF font (like Consolas, Couri
 
 ### Program Closes Immediately
 
-**Cause**: Font file not found.
+**Cause**: Font file or shader files not found.
 
 **Solution**:
 1. Run `copy_assets_windows.bat` from project root
-2. Or manually copy `assets/` folder to the same directory as `phantom-writer.exe`
-3. Make sure `assets/fonts/default_mono.ttf` exists
+2. Or manually copy both:
+   - `assets/` folder to the same directory as `phantom-writer.exe`
+   - `shaders/` folder to the same directory as `phantom-writer.exe`
+3. Make sure these files exist:
+   - `assets/fonts/default_mono.ttf`
+   - `shaders/text_vert.spv`
+   - `shaders/text_frag.spv`
 
 The program will show a MessageBox with error details if something fails.
 

@@ -109,7 +109,7 @@ int main() {
 
     if (!textRenderer.initialize(&renderer, renderer.getRenderPass(), fontLoader.getAtlas())) {
         LOG_FATAL(phantom::LogCategory::INIT, "Failed to initialize text renderer");
-        showWindowsError("Failed to initialize text renderer.\nCheck phantom_writer.log for details.");
+        showWindowsError("Failed to initialize text renderer.\n\nMost common causes:\n- Shader files not found (shaders/text_vert.spv, shaders/text_frag.spv)\n- Run copy_assets_windows.bat to copy all required files\n\nCheck phantom_writer.log for details.");
         renderer.cleanup();
         platform.cleanup();
         phantom::Logger::shutdown();
