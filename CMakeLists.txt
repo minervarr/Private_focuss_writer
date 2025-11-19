@@ -140,6 +140,9 @@ add_subdirectory(src/persistence)
 add_subdirectory(src/ui)
 add_subdirectory(src/platform/${PHANTOM_PLATFORM_DIR})
 
+# Tests
+add_subdirectory(tests)
+
 # ============================================================================
 # Ejecutable principal
 # ============================================================================
