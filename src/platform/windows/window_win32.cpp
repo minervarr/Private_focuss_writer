@@ -305,6 +305,23 @@ bool WindowWin32::isMinimized() const {
     return isMinimized_;
 }
 
+bool WindowWin32::isFullscreen() const {
+    // TODO: Implement Windows fullscreen support
+    return false;
+}
+
+void WindowWin32::setFullscreen(bool fullscreen, bool exclusive) {
+    // TODO: Implement Windows fullscreen support
+    (void)fullscreen;
+    (void)exclusive;
+    LOG_WARN(LogCategory::PLATFORM, "Fullscreen not yet implemented for Windows");
+}
+
+void WindowWin32::toggleFullscreen() {
+    // TODO: Implement Windows fullscreen support
+    LOG_WARN(LogCategory::PLATFORM, "Fullscreen not yet implemented for Windows");
+}
+
 VkSurfaceKHR WindowWin32::createVulkanSurface(VkInstance instance) {
     VkWin32SurfaceCreateInfoKHR createInfo = {};
     createInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;

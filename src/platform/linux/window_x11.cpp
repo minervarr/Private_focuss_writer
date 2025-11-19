@@ -85,6 +85,10 @@ bool WindowX11::create(const WindowConfig& config) {
     // Crear la ventana
     width_ = config.width;
     height_ = config.height;
+    windowedWidth_ = width_;
+    windowedHeight_ = height_;
+    isFullscreen_ = config.fullscreen;
+    exclusiveFullscreen_ = config.exclusiveFullscreen;
 
     window_ = XCreateSimpleWindow(
         display_,
@@ -120,6 +124,12 @@ bool WindowX11::create(const WindowConfig& config) {
 
     // Mostrar la ventana
     XMapWindow(display_, window_);
+
+    // Apply fullscreen if requested
+    if (isFullscreen_) {
+        applyFullscreenState();
+    }
+
     XFlush(display_);
 
     LOG_INFO(LogCategory::PLATFORM, "X11 window created and mapped successfully");
@@ -251,6 +261,125 @@ void WindowX11::getFramebufferSize(int& width, int& height) const {
 
 bool WindowX11::isMinimized() const {
     return isMinimized_;
+}
+
+bool WindowX11::isFullscreen() const {
+    return isFullscreen_;
+}
+
+void WindowX11::setFullscreen(bool fullscreen, bool exclusive) {
+    if (isFullscreen_ == fullscreen && exclusiveFullscreen_ == exclusive) {
+        return;  // No change needed
+    }
+
+    if (!fullscreen) {
+        // Exiting fullscreen - restore windowed state
+        LOG_INFO(LogCategory::PLATFORM, "Exiting fullscreen mode");
+
+        isFullscreen_ = false;
+        exclusiveFullscreen_ = false;
+
+        // Remove fullscreen state
+        updateWindowState(XInternAtom(display_, "_NET_WM_STATE_FULLSCREEN", False), false);
+
+        // Restore window decorations
+        XSetWindowAttributes attrs;
+        attrs.override_redirect = False;
+        XChangeWindowAttributes(display_, window_, CWOverrideRedirect, &attrs);
+
+        // Restore window size and position
+        XMoveResizeWindow(display_, window_, windowedX_, windowedY_, windowedWidth_, windowedHeight_);
+        width_ = windowedWidth_;
+        height_ = windowedHeight_;
+
+        XFlush(display_);
+    } else {
+        // Entering fullscreen
+        LOG_INFO(LogCategory::PLATFORM, "Entering fullscreen mode (exclusive: %d)", exclusive);
+
+        // Save current window state
+        Window root_return;
+        int x, y;
+        unsigned int width, height, border, depth;
+        XGetGeometry(display_, window_, &root_return, &x, &y, &width, &height, &border, &depth);
+        windowedX_ = x;
+        windowedY_ = y;
+        windowedWidth_ = width;
+        windowedHeight_ = height;
+
+        isFullscreen_ = true;
+        exclusiveFullscreen_ = exclusive;
+
+        applyFullscreenState();
+    }
+}
+
+void WindowX11::toggleFullscreen() {
+    setFullscreen(!isFullscreen_, exclusiveFullscreen_);
+}
+
+void WindowX11::applyFullscreenState() {
+    if (!display_ || !window_) {
+        return;
+    }
+
+    int screen = DefaultScreen(display_);
+
+    if (exclusiveFullscreen_) {
+        // Exclusive fullscreen - bypass compositor, grab all GPU resources
+        LOG_INFO(LogCategory::PLATFORM, "Applying X11 exclusive fullscreen mode");
+
+        // Set override redirect to bypass window manager
+        XSetWindowAttributes attrs;
+        attrs.override_redirect = True;
+        XChangeWindowAttributes(display_, window_, CWOverrideRedirect, &attrs);
+
+        // Get screen dimensions
+        width_ = DisplayWidth(display_, screen);
+        height_ = DisplayHeight(display_, screen);
+
+        // Move and resize window to cover entire screen
+        XMoveResizeWindow(display_, window_, 0, 0, width_, height_);
+
+        // Raise window above all others
+        XRaiseWindow(display_, window_);
+
+        // Grab keyboard and mouse (optional, for true exclusive mode)
+        // XGrabKeyboard(display_, window_, True, GrabModeAsync, GrabModeAsync, CurrentTime);
+        // XGrabPointer(display_, window_, True, ButtonPressMask | ButtonReleaseMask | PointerMotionMask,
+        //              GrabModeAsync, GrabModeAsync, None, None, CurrentTime);
+
+    } else {
+        // Standard fullscreen via window manager
+        LOG_INFO(LogCategory::PLATFORM, "Applying standard fullscreen mode");
+
+        // Use _NET_WM_STATE_FULLSCREEN for standard fullscreen
+        updateWindowState(XInternAtom(display_, "_NET_WM_STATE_FULLSCREEN", False), true);
+
+        // Get screen dimensions
+        width_ = DisplayWidth(display_, screen);
+        height_ = DisplayHeight(display_, screen);
+    }
+
+    XFlush(display_);
+    LOG_DEBUG(LogCategory::PLATFORM, "Fullscreen applied: %dx%d", width_, height_);
+}
+
+void WindowX11::updateWindowState(Atom state, bool enable) {
+    XEvent event;
+    memset(&event, 0, sizeof(event));
+
+    event.type = ClientMessage;
+    event.xclient.window = window_;
+    event.xclient.message_type = XInternAtom(display_, "_NET_WM_STATE", False);
+    event.xclient.format = 32;
+    event.xclient.data.l[0] = enable ? 1 : 0;  // _NET_WM_STATE_ADD or _NET_WM_STATE_REMOVE
+    event.xclient.data.l[1] = state;
+    event.xclient.data.l[2] = 0;
+    event.xclient.data.l[3] = 1;  // Source indication: application
+
+    XSendEvent(display_, DefaultRootWindow(display_), False,
+               SubstructureRedirectMask | SubstructureNotifyMask, &event);
 }
 
 VkSurfaceKHR WindowX11::createVulkanSurface(VkInstance instance) {

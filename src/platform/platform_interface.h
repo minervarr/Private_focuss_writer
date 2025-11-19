@@ -22,6 +22,8 @@ struct WindowConfig {
     int height = 720;
     bool resizable = true;
     bool decorated = true;
+    bool fullscreen = false;          // Fullscreen mode
+    bool exclusiveFullscreen = false; // X11 exclusive fullscreen (overrides compositor)
 };
 
 class IPlatformWindow {
@@ -39,6 +41,11 @@ public:
     // Properties
     virtual void getFramebufferSize(int& width, int& height) const = 0;
     virtual bool isMinimized() const = 0;
+    virtual bool isFullscreen() const = 0;
+
+    // Fullscreen control
+    virtual void setFullscreen(bool fullscreen, bool exclusive = false) = 0;
+    virtual void toggleFullscreen() = 0;
 
     // Input callback
     using InputCallback = std::function<void(const InputEvent&)>;
