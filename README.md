@@ -17,9 +17,23 @@ A high-performance, distraction-free text editor built with Vulkan rendering and
 
 Windows 10/11 with Vulkan support
 
-See [Windows Build Instructions](README_WINDOWS.md) (if available) or use:
-- `compile_shaders_windows.bat` - Compile shaders
-- `copy_assets_windows.bat` - Copy assets to build directory
+**Two Window Backends Available:**
+- **Sokol + Vulkan** (Default, Recommended) - Modern cross-platform abstraction
+- **Pure Win32 + Vulkan** (Legacy) - Direct Win32 API usage
+
+Quick start:
+```batch
+# Build with Sokol+Vulkan (default)
+build_windows.bat
+
+# Build with pure Win32
+build_windows.bat --no-sokol
+
+# Release build
+build_windows.bat Release
+```
+
+See [WINDOWS_SOKOL_INTEGRATION.md](WINDOWS_SOKOL_INTEGRATION.md) for detailed Windows build instructions and Sokol integration documentation.
 
 ### Linux
 
@@ -72,19 +86,21 @@ cd ..
 
 #### Windows
 ```batch
-REM Compile shaders
-compile_shaders_windows.bat
+REM Automated build (recommended)
+build_windows.bat
 
-REM Build with Visual Studio
+REM Or manual build
+compile_shaders_windows.bat
 mkdir build
 cd build
-cmake ..
+cmake -G "Visual Studio 17 2022" -A x64 -DUSE_SOKOL_VULKAN=ON ..
 cmake --build . --config Release
 cd ..
-
-REM Copy assets
-copy_assets_windows.bat
 ```
+
+**Build Options:**
+- `USE_SOKOL_VULKAN=ON` - Use Sokol+Vulkan backend (default)
+- `USE_SOKOL_VULKAN=OFF` - Use pure Win32+Vulkan backend
 
 ### Running
 
@@ -114,17 +130,21 @@ Private_focuss_writer/
 │   ├── persistence/           # Auto-save and swap files
 │   ├── platform/              # Platform-specific code
 │   │   ├── linux/            # Linux (X11) implementation
-│   │   └── windows/          # Windows (Win32) implementation
+│   │   └── windows/          # Windows (Sokol+Win32+Vulkan)
 │   ├── rendering/            # Rendering subsystem
 │   │   ├── core/            # Platform-agnostic rendering
 │   │   └── vulkan/          # Vulkan renderer
 │   ├── ui/                   # UI components
 │   └── utils/                # Utilities and logging
-├── compile_shaders_linux.sh   # Linux shader compiler
-├── compile_shaders_windows.bat # Windows shader compiler
-├── copy_assets_linux.sh       # Linux asset copier
-├── copy_assets_windows.bat    # Windows asset copier
-└── build_linux.sh            # Linux automated build script
+├── third_party/
+│   └── sokol/                # Sokol headers (Windows)
+├── build_linux.sh                    # Linux automated build script
+├── build_windows.bat                 # Windows automated build script
+├── compile_shaders_linux.sh          # Linux shader compiler
+├── compile_shaders_windows.bat       # Windows shader compiler
+├── copy_assets_linux.sh              # Linux asset copier
+├── WINDOWS_SOKOL_INTEGRATION.md      # Windows Sokol documentation
+└── TESTING.md                        # Testing documentation
 ```
 
 ## Development
@@ -191,5 +211,6 @@ See LICENSE file for details.
 
 Built with:
 - Vulkan for rendering
-- FreeType for font loading
-- X11 (Linux) / Win32 (Windows) for windowing
+- stb_truetype for font loading
+- Sokol (Windows - default) for window/input abstraction
+- X11 (Linux) / Win32 (Windows - legacy) for windowing
